@@ -9,6 +9,21 @@ namespace DBRepair
     {
         static void Main(string[] args)
         {
+            try
+            {
+                Wrapper(args);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Fatal error: ");
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("Press any key to exit");
+                Console.ReadKey();
+            }
+        }
+
+        static void Wrapper(string[] args)
+        {
             //if (File.Exists("Sandbox_230915.db"))
             //{
             //    File.Delete("Sandbox_230915.db");
@@ -32,6 +47,34 @@ namespace DBRepair
                 return;
             }
 
+
+            try
+            {
+                Console.WriteLine("Evaluating the database change counter");
+                //FileStream fileStream = File.Open(fileName, FileMode.Open);
+                BinaryReader binaryReader = new BinaryReader(File.Open(fileName, FileMode.Open));
+                binaryReader.BaseStream.Position = 24;
+
+                int dbChangeCounter = binaryReader.ReadInt32();
+                if (dbChangeCounter < 0)
+                {
+                    Console.WriteLine("The database change counter is negative, resetting...");
+                    binaryReader.BaseStream.Position = 24;
+                    byte[] bytesToWrite = { 0x0, 0x0, 0x0, 0x0 };
+                    binaryReader.BaseStream.Write(bytesToWrite, 0, bytesToWrite.Length);
+                }
+                binaryReader.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Fatal error: Binary evaluation failed.");
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("Press any key to exit");
+                Console.ReadKey();
+                return;
+            }
+
+
             string fileNameBackup = fileName + ".backup";
             if (File.Exists(fileNameBackup))
             {
@@ -39,6 +82,7 @@ namespace DBRepair
             }
 
             File.Move(fileName, fileNameBackup);
+
             SQLiteConnection conn;
             try
             {
